@@ -1,0 +1,7 @@
+[tools]
+go = "1.23.0"
+
+[tasks]
+build = "go build ./..."
+generate = "go run github.com/ogen-go/ogen/cmd/ogen@v1.1.0 --target internal/api --clean --config ogen.yml api/petstore-expanded.yml"
+test = "go test ./..."
