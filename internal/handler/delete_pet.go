@@ -10,12 +10,16 @@ import (
 	"petstore/internal/storage"
 )
 
-func (s *PetStoreHandler) DeletePet(ctx context.Context, params api.DeletePetParams) error {
+type deletePetStore interface {
+	DeletePet(ctx context.Context, input domain.DeletePetInput) (domain.DeletePetOutput, error)
+}
+
+func doDeletePet(ctx context.Context, params api.DeletePetParams, store deletePetStore) error {
 	input := domain.DeletePetInput{
 		ID: params.ID,
 	}
 
-	_, err := s.store.DeletePet(ctx, input)
+	_, err := store.DeletePet(ctx, input)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			return &api.ErrorStatusCode{
@@ -36,4 +40,8 @@ func (s *PetStoreHandler) DeletePet(ctx context.Context, params api.DeletePetPar
 	}
 
 	return nil
+}
+
+func (s *PetStoreHandler) DeletePet(ctx context.Context, params api.DeletePetParams) error {
+	return doDeletePet(ctx, params, s.store)
 }

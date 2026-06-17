@@ -8,7 +8,11 @@ import (
 	"petstore/internal/domain"
 )
 
-func (s *PetStoreHandler) FindPets(ctx context.Context, params api.FindPetsParams) ([]api.Pet, error) {
+type findPetsStore interface {
+	FindPets(ctx context.Context, input domain.FindPetsInput) (domain.FindPetsOutput, error)
+}
+
+func doFindPets(ctx context.Context, params api.FindPetsParams, store findPetsStore) ([]api.Pet, error) {
 	input := domain.FindPetsInput{
 		Tags: params.Tags,
 	}
@@ -17,7 +21,7 @@ func (s *PetStoreHandler) FindPets(ctx context.Context, params api.FindPetsParam
 		input.Limit = &limit
 	}
 
-	out, err := s.store.FindPets(ctx, input)
+	out, err := store.FindPets(ctx, input)
 	if err != nil {
 		return nil, &api.ErrorStatusCode{
 			StatusCode: http.StatusInternalServerError,
@@ -41,4 +45,8 @@ func (s *PetStoreHandler) FindPets(ctx context.Context, params api.FindPetsParam
 	}
 
 	return result, nil
+}
+
+func (s *PetStoreHandler) FindPets(ctx context.Context, params api.FindPetsParams) ([]api.Pet, error) {
+	return doFindPets(ctx, params, s.store)
 }

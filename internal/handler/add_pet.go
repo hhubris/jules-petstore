@@ -7,7 +7,11 @@ import (
 	"petstore/internal/domain"
 )
 
-func (s *PetStoreHandler) AddPet(ctx context.Context, req *api.NewPet) (*api.Pet, error) {
+type addPetStore interface {
+	AddPet(ctx context.Context, input domain.AddPetInput) (domain.AddPetOutput, error)
+}
+
+func doAddPet(ctx context.Context, req *api.NewPet, store addPetStore) (*api.Pet, error) {
 	input := domain.AddPetInput{
 		Name: req.Name,
 	}
@@ -16,7 +20,7 @@ func (s *PetStoreHandler) AddPet(ctx context.Context, req *api.NewPet) (*api.Pet
 		input.Tag = &val
 	}
 
-	out, err := s.store.AddPet(ctx, input)
+	out, err := store.AddPet(ctx, input)
 	if err != nil {
 		return nil, err
 	}
@@ -30,4 +34,8 @@ func (s *PetStoreHandler) AddPet(ctx context.Context, req *api.NewPet) (*api.Pet
 	}
 
 	return res, nil
+}
+
+func (s *PetStoreHandler) AddPet(ctx context.Context, req *api.NewPet) (*api.Pet, error) {
+	return doAddPet(ctx, req, s.store)
 }

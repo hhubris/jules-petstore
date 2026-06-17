@@ -10,12 +10,16 @@ import (
 	"petstore/internal/storage"
 )
 
-func (s *PetStoreHandler) FindPetByID(ctx context.Context, params api.FindPetByIDParams) (*api.Pet, error) {
+type findPetByIDStore interface {
+	FindPetByID(ctx context.Context, input domain.FindPetByIDInput) (domain.FindPetByIDOutput, error)
+}
+
+func doFindPetByID(ctx context.Context, params api.FindPetByIDParams, store findPetByIDStore) (*api.Pet, error) {
 	input := domain.FindPetByIDInput{
 		ID: params.ID,
 	}
 
-	out, err := s.store.FindPetByID(ctx, input)
+	out, err := store.FindPetByID(ctx, input)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			return nil, &api.ErrorStatusCode{
@@ -44,4 +48,8 @@ func (s *PetStoreHandler) FindPetByID(ctx context.Context, params api.FindPetByI
 	}
 
 	return res, nil
+}
+
+func (s *PetStoreHandler) FindPetByID(ctx context.Context, params api.FindPetByIDParams) (*api.Pet, error) {
+	return doFindPetByID(ctx, params, s.store)
 }
