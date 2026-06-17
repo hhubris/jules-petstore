@@ -4,19 +4,30 @@ import (
 	"context"
 
 	"petstore/internal/api"
+	"petstore/internal/domain"
 )
 
 func (s *PetStoreHandler) AddPet(ctx context.Context, req *api.NewPet) (*api.Pet, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	pet := &api.Pet{
-		ID:   s.nextID,
+	input := domain.AddPetInput{
 		Name: req.Name,
-		Tag:  req.Tag,
 	}
-	s.pets[s.nextID] = pet
-	s.nextID++
+	if req.Tag.IsSet() {
+		val := req.Tag.Value
+		input.Tag = &val
+	}
 
-	return pet, nil
+	out, err := s.store.AddPet(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &api.Pet{
+		ID:   out.Pet.ID,
+		Name: out.Pet.Name,
+	}
+	if out.Pet.Tag != nil {
+		res.Tag = api.NewOptString(*out.Pet.Tag)
+	}
+
+	return res, nil
 }

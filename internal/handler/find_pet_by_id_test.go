@@ -9,7 +9,8 @@ import (
 )
 
 func TestPetStoreHandler_FindPetByID(t *testing.T) {
-	h := New()
+	store := newMockStore()
+	h := New(store)
 	ctx := context.Background()
 
 	// Add a pet first

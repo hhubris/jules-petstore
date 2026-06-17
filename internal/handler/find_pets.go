@@ -2,43 +2,42 @@ package handler
 
 import (
 	"context"
-	"sort"
+	"net/http"
 
 	"petstore/internal/api"
+	"petstore/internal/domain"
 )
 
 func (s *PetStoreHandler) FindPets(ctx context.Context, params api.FindPetsParams) ([]api.Pet, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	var result []api.Pet
-	for _, pet := range s.pets {
-		if params.Tags != nil {
-			// Basic filtering if tag is provided
-			match := false
-			for _, tag := range params.Tags {
-				if pet.Tag.IsSet() && pet.Tag.Value == tag {
-					match = true
-					break
-				}
-			}
-			if !match {
-				continue
-			}
-		}
-		result = append(result, *pet)
+	input := domain.FindPetsInput{
+		Tags: params.Tags,
 	}
-
-	// Sort by ID to make it deterministic
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].ID < result[j].ID
-	})
-
 	if params.Limit.IsSet() {
 		limit := int(params.Limit.Value)
-		if len(result) > limit {
-			result = result[:limit]
+		input.Limit = &limit
+	}
+
+	out, err := s.store.FindPets(ctx, input)
+	if err != nil {
+		return nil, &api.ErrorStatusCode{
+			StatusCode: http.StatusInternalServerError,
+			Response: api.Error{
+				Code:    int32(http.StatusInternalServerError),
+				Message: "Internal server error",
+			},
 		}
+	}
+
+	var result []api.Pet
+	for _, p := range out.Pets {
+		apiPet := api.Pet{
+			ID:   p.ID,
+			Name: p.Name,
+		}
+		if p.Tag != nil {
+			apiPet.Tag = api.NewOptString(*p.Tag)
+		}
+		result = append(result, apiPet)
 	}
 
 	return result, nil

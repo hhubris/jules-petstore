@@ -8,7 +8,8 @@ import (
 )
 
 func TestPetStoreHandler_AddPet(t *testing.T) {
-	h := New()
+	store := newMockStore()
+	h := New(store)
 	ctx := context.Background()
 
 	req := &api.NewPet{
