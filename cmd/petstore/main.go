@@ -1,22 +1,22 @@
 package main
 
 import (
+	"context"
 	"log"
-	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
-	"petstore/internal/api"
 	"petstore/internal/server"
 )
 
 func main() {
-	handler := server.NewPetStoreServer()
-	srv, err := api.NewServer(handler)
-	if err != nil {
-		log.Fatalf("failed to create server: %v", err)
-	}
+	// Create context that listens for the interrupt signal from the OS.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
-	log.Println("Server listening on :8080")
-	if err := http.ListenAndServe(":8080", srv); err != nil {
-		log.Fatalf("server failed: %v", err)
+	if err := server.Run(ctx); err != nil {
+		log.Printf("Server failed: %v", err)
+		os.Exit(1)
 	}
 }
