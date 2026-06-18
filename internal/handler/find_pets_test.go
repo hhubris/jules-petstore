@@ -8,7 +8,8 @@ import (
 )
 
 func TestPetStoreHandler_FindPets(t *testing.T) {
-	h := New()
+	store := newMockStore()
+	h := New(store)
 	ctx := context.Background()
 
 	// Add a few pets

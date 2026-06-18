@@ -2,25 +2,46 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"petstore/internal/api"
+	"petstore/internal/domain"
+	"petstore/internal/storage"
 )
 
-func (s *PetStoreHandler) DeletePet(ctx context.Context, params api.DeletePetParams) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+type deletePetStore interface {
+	DeletePet(ctx context.Context, input domain.DeletePetInput) (domain.DeletePetOutput, error)
+}
 
-	if _, ok := s.pets[params.ID]; !ok {
+func doDeletePet(ctx context.Context, params api.DeletePetParams, store deletePetStore) error {
+	input := domain.DeletePetInput{
+		ID: params.ID,
+	}
+
+	_, err := store.DeletePet(ctx, input)
+	if err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			return &api.ErrorStatusCode{
+				StatusCode: http.StatusNotFound,
+				Response: api.Error{
+					Code:    int32(http.StatusNotFound),
+					Message: "Pet not found",
+				},
+			}
+		}
 		return &api.ErrorStatusCode{
-			StatusCode: http.StatusNotFound,
+			StatusCode: http.StatusInternalServerError,
 			Response: api.Error{
-				Code:    int32(http.StatusNotFound),
-				Message: "Pet not found",
+				Code:    int32(http.StatusInternalServerError),
+				Message: "Internal server error",
 			},
 		}
 	}
 
-	delete(s.pets, params.ID)
 	return nil
+}
+
+func (s *PetStoreHandler) DeletePet(ctx context.Context, params api.DeletePetParams) error {
+	return doDeletePet(ctx, params, s.store)
 }

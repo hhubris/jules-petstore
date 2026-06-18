@@ -9,11 +9,13 @@ import (
 
 	"petstore/internal/api"
 	"petstore/internal/handler"
+	"petstore/internal/storage"
 )
 
 // Run creates the server and starts listening, observing the given context for shutdown
 func Run(ctx context.Context) error {
-	h := handler.New()
+	store := storage.New()
+	h := handler.New(store)
 	srv, err := api.NewServer(h)
 	if err != nil {
 		return err

@@ -1,22 +1,18 @@
 package handler
 
 import (
-	"sync"
-
 	"petstore/internal/api"
+	"petstore/internal/domain"
 )
 
 var _ api.Handler = (*PetStoreHandler)(nil)
 
 type PetStoreHandler struct {
-	mu     sync.Mutex
-	pets   map[int64]*api.Pet
-	nextID int64
+	store domain.PetStore
 }
 
-func New() *PetStoreHandler {
+func New(store domain.PetStore) *PetStoreHandler {
 	return &PetStoreHandler{
-		pets:   make(map[int64]*api.Pet),
-		nextID: 1,
+		store: store,
 	}
 }
